@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, render_template, request, jsonify
 import pickle
 from datetime import datetime
@@ -9,7 +8,7 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# Load the trained models correctly
+# Loading the trained models
 def load_models(filename):
     """Load saved weather prediction models and scaler from a file."""
     with open(filename, 'rb') as f:
@@ -17,13 +16,13 @@ def load_models(filename):
     return models['regressor'], models['classifier'], models['scaler']
 
 try:
-    # Load models using the correct unpacking
+    # Loading models
     regressor, classifier, scaler = load_models('C:\\projects\weather\\app\\weather_models.pkl')
 except Exception as e:
     print(f"Error loading models: {e}")
     raise
 
-# Get API key from environment variable
+# Getting API key from environment variable
 API_KEY = os.getenv(API_KEY)
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 
