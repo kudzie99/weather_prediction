@@ -10,6 +10,7 @@ import json
 import os
 
 df = pd.read_csv("GlobalWeatherRepository.csv")
+print(df.head(3))
 
 df = df.drop(['last_updated_epoch',
               'last_updated',
@@ -231,6 +232,7 @@ offset_map = {
 }
 
 df['timezone'] = df['timezone'].map(offset_map)
+print(df.head())
 
 df = df.drop(['country', 'location_name', 'precip_in'], axis=1)
 
@@ -244,7 +246,7 @@ df['rain'] = df['precip_mm'].apply(lambda x: 1 if x > 0.0 else 0)
 df = df.drop('precip_mm', axis=1)
 
 
-# Access the variable
+# Access the api key variable
 API_KEY = os.getenv(API_KEY)
 BASE_URL= 'https://api.openweathermap.org/data/2.5/'
 
@@ -252,7 +254,7 @@ def get_current_weather(city):
     url = f'{BASE_URL}weather?q={city}&units=metric&appid={API_KEY}'
     response = requests.get(url)
 
-    # Check if the request was successful
+    # Checking if the request was successful
     if response.status_code == 200:
         data = response.json()
         return {
@@ -283,29 +285,29 @@ def get_current_weather(city):
 
 def prepare_features(df):
     """Prepare enhanced features for model training/prediction"""
-    # Create time-based features
+    # Creating time-based features
     df['hour'] = (df['timezone'] % 86400) // 3600
     df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24)
     df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24)
 
-    # Add more time-based features
+    # Adding more time-based features
     df['day_part'] = pd.cut(df['hour'],
                            bins=[-1, 6, 12, 18, 24],
                            labels=['night', 'morning', 'afternoon', 'evening'])
     df = pd.get_dummies(df, columns=['day_part'])
 
-    # Create interaction features
+    # Creating interaction features
     df['temp_humidity_interaction'] = df['temperature_celsius'] * df['humidity'] / 100
     df['wind_temp_interaction'] = df['wind_kph'] * df['temperature_celsius']
     df['pressure_temp_interaction'] = df['pressure_mb'] * df['temperature_celsius'] / 1000
 
-    # Add squared terms for important features
+    # Adding squared terms for important features
     df['temp_squared'] = df['temperature_celsius'] ** 2
     df['humidity_squared'] = df['humidity'] ** 2
     df['pressure_squared'] = df['pressure_mb'] ** 2
     df['wind_squared'] = df['wind_kph'] ** 2
 
-    # Feature columns in fixed order
+    # Feature columns in order
     feature_columns = [
         'latitude',
         'longitude',
@@ -337,7 +339,7 @@ def train_models(X, y):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # Optimize regressor parameters
+    # Optimize\ing regressor parameters
     reg_params = {
         'n_estimators': 200,
         'max_depth': 15,
@@ -352,7 +354,7 @@ def train_models(X, y):
     regressor = MultiOutputRegressor(base_regressor)
     regressor.fit(X_scaled, y[['temperature_celsius', 'humidity']])
 
-    # Optimize classifier parameters
+    # Optimizing classifier parameters
     clf_params = {
         'n_estimators': 200,
         'max_depth': 10,
@@ -372,7 +374,7 @@ def prepare_current_weather(weather_data):
     """Prepare current weather data with enhanced features"""
     hour = (weather_data['timezone'] % 86400) // 3600
 
-    # Create base features
+    # Creating base features
     features = {
         'latitude': weather_data['latitude'],
         'longitude': weather_data['longitude'],
@@ -386,7 +388,7 @@ def prepare_current_weather(weather_data):
         'hour_cos': np.cos(2 * np.pi * hour / 24)
     }
 
-    # Add time-based features
+    # Adding time-based features
     day_part = pd.cut([hour], bins=[-1, 6, 12, 18, 24],
                       labels=['night', 'morning', 'afternoon', 'evening'])[0]
     features.update({
@@ -394,7 +396,7 @@ def prepare_current_weather(weather_data):
         for part in ['night', 'morning', 'afternoon', 'evening']
     })
 
-    # Add squared and interaction terms
+    # Adding squared and interaction terms
     temp = weather_data['current_temp']
     humidity = weather_data['humidity']
     pressure = weather_data['pressure']
@@ -410,7 +412,7 @@ def prepare_current_weather(weather_data):
         'pressure_temp_interaction': pressure * temp / 1000
     })
 
-    # Create DataFrame with fixed column order
+    # Creating DataFrame with column order
     feature_columns = [
         'latitude',
         'longitude',
@@ -440,7 +442,7 @@ def prepare_current_weather(weather_data):
 
 def split_target_variables(df):
     """
-    Split the dataset into features and target variables for weather prediction.
+    Spliting the dataset into features and target variables for weather prediction.
 
     Parameters:
     df (pandas.DataFrame): Input DataFrame containing weather data
@@ -448,10 +450,10 @@ def split_target_variables(df):
     Returns:
     tuple: (X, y) where X contains feature data and y contains target variables
     """
-    # First prepare the features using the existing prepare_features function
+    # Preparing the features using the existing prepare_features function
     X = prepare_features(df)
 
-    # Create target DataFrame with temperature, humidity and rain
+    # Creating target DataFrame with temperature, humidity and rain
     y = pd.DataFrame({
         'temperature_celsius': df['temperature_celsius'],
         'humidity': df['humidity'],
@@ -470,27 +472,27 @@ def predict_weather(weather_data, regressor, rain_classifier, scaler, hours=5):
         future_hour = (current_hour + hour) % 24
         hour_features = base_features.copy()
 
-        # Update time features
+        # Updating time features
         hour_features['hour_sin'] = np.sin(2 * np.pi * future_hour / 24)
         hour_features['hour_cos'] = np.cos(2 * np.pi * future_hour / 24)
 
-        # Update day part features
+        # Updating day part features
         day_part = pd.cut([future_hour], bins=[-1, 6, 12, 18, 24],
                          labels=['night', 'morning', 'afternoon', 'evening'])[0]
         for part in ['night', 'morning', 'afternoon', 'evening']:
             hour_features[f'day_part_{part}'] = 1 if part == day_part else 0
 
-        # Scale features
+        # Scalling features
         X_scaled = scaler.transform(hour_features)
 
-        # Make direct prediction for temperature and humidity
+        # Making direct prediction for temperature and humidity
         reg_pred = regressor.predict(X_scaled)
 
-        # Get individual predictions for uncertainty estimation
+        # Getting individual predictions for uncertainty estimation
         temp_predictions = []
         humidity_predictions = []
 
-        # Access individual estimators for each target
+        # Accessing individual estimators for each target
         for est_temp, est_humid in zip(regressor.estimators_[0].estimators_,
                                      regressor.estimators_[1].estimators_):
             temp_pred = est_temp.predict(X_scaled)
@@ -501,11 +503,11 @@ def predict_weather(weather_data, regressor, rain_classifier, scaler, hours=5):
         temp_predictions = np.array(temp_predictions)
         humidity_predictions = np.array(humidity_predictions)
 
-        # Calculate uncertainties
+        # Calculating uncertainties
         temp_std = np.std(temp_predictions)
         humidity_std = np.std(humidity_predictions)
 
-        # Get rain probability
+        # Getting rain probability
         rain_prob = rain_classifier.predict_proba(X_scaled)[0][1]
 
         predictions.append({
@@ -523,12 +525,12 @@ def evaluate_models(X, y, regressor, rain_classifier, scaler):
     """Evaluate model performance"""
     X_scaled = scaler.transform(X)
 
-    # Evaluate regression models
+    # Evaluating regression models
     reg_pred = regressor.predict(X_scaled)
     temp_mse = mean_squared_error(y['temperature_celsius'], reg_pred[:, 0])
     humidity_mse = mean_squared_error(y['humidity'], reg_pred[:, 1])
 
-    # Evaluate classifier
+    # Evaluating classifier
     rain_pred = rain_classifier.predict(X_scaled)
     rain_accuracy = accuracy_score(y['rain'], rain_pred)
 
@@ -574,28 +576,27 @@ def load_models(filename):
 
     return models['regressor'], models['classifier'], models['scaler']
 
-# Example usage
 def main():
-    # Split data for training and evaluation
+    # Splitting data for training and evaluation
     X, y = split_target_variables(df)
     train_size = int(0.8 * len(X))
     X_train, X_val = X[:train_size], X[train_size:]
     y_train, y_val = y[:train_size], y[train_size:]
 
-    # Train models
+    # Training models
     regressor, rain_classifier, scaler = train_models(X_train, y_train)
 
-    # Evaluate models
+    # Evaluating models
     metrics = evaluate_models(X_val, y_val, regressor, rain_classifier, scaler)
     print("\nModel Performance Metrics:")
     print(f"Temperature RMSE: {metrics['temperature_rmse']:.2f}°C")
     print(f"Humidity RMSE: {metrics['humidity_rmse']:.2f}%")
     print(f"Rain Prediction Accuracy: {metrics['rain_accuracy']:.2f}")
 
-    # Save models
+    # Saving models
     save_models('weather_models.pkl', regressor, rain_classifier, scaler)
 
-    # Make predictions
+    # Making predictions
     city = input("Enter city name: ")
     current_weather = get_current_weather(city)
     if current_weather:
