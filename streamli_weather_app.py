@@ -199,7 +199,7 @@ def create_forecast_plot(predictions):
     return fig
 
 def main():
-    st.title("Weather Forecast Using Machine Learning Application")
+    st.title("Weather Forecast Using Machine Learning")
     
     # Search bar
     city = st.text_input("Enter city name", "")
@@ -264,7 +264,7 @@ def main():
                 # Description
                 st.markdown("<br>", unsafe_allow_html=True)
                 st.info(f"Weather Description: {current_weather['description']}")
-                
+
             with col2:
                 # Map
                 m = folium.Map(location=[current_weather['latitude'], current_weather['longitude']], zoom_start=10)
@@ -274,7 +274,7 @@ def main():
                 ).add_to(m)
                 st_folium(m, height=300)
             
-            # Forecast section
+            # Forecast section - now spanning full width
             st.subheader("Weather Forecast")
             predictions = predict_weather(current_weather)
             
@@ -282,9 +282,8 @@ def main():
             fig = create_forecast_plot(predictions)
             st.plotly_chart(fig, use_container_width=True)
             
-            # Display forecast data in a table
-            df_forecast = pd.DataFrame(predictions)
-            st.dataframe(df_forecast, hide_index=True)
+            # Display forecast data in a table spanning full width
+            st.dataframe(pd.DataFrame(predictions), use_container_width=True)
             
         else:
             st.error("City not found. Please check the spelling and try again.")
