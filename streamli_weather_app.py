@@ -9,6 +9,8 @@ from streamlit_folium import st_folium
 import os
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import urllib.request
+import io
 
 # Page config
 st.set_page_config(
@@ -17,36 +19,54 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS with enhanced metric styling
 st.markdown("""
     <style>
     .main {
         padding: 2rem;
     }
-    .stMetric {
+    div[data-testid="metric-container"] {
         background-color: #f8f9fa;
         padding: 1rem;
         border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    }
+    div[data-testid="metric-container"] > div {
+        width: 100%;
+    }
+    div[data-testid="metric-container"] label {
+        color: #0f0f0f;
+        font-weight: 600;
+    }
+    div[data-testid="metric-container"] div[data-testid="metric-value"] {
+        color: #2c3e50;
+        font-weight: 700;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Load models
+# Load models from GitHub
 @st.cache_resource
-def load_models(filename):
-    """Load saved weather prediction models and scaler from a file."""
-    with open(filename, 'rb') as f:
-        models = pickle.load(f)
-    return models['regressor'], models['classifier'], models['scaler']
+def load_github_models(url):
+    """Load saved weather prediction models and scaler from GitHub."""
+    try:
+        response = urllib.request.urlopen(url)
+        models = pickle.load(response)
+        return models['regressor'], models['classifier'], models['scaler']
+    except Exception as e:
+        st.error(f"Error loading models from GitHub: {e}")
+        return None, None, None
 
-try:
-    regressor, classifier, scaler = load_models('weather_models.pkl')
-except Exception as e:
-    st.error(f"Error loading models: {e}")
+# Get the model URL from Streamlit secrets
+GITHUB_MODEL_URL = st.secrets["github_model_url"]
+regressor, classifier, scaler = load_github_models(GITHUB_MODEL_URL)
+
+if not all([regressor, classifier, scaler]):
+    st.error("Failed to load models. Please check your configuration.")
     st.stop()
 
-# API setup
-API_KEY = os.getenv('API_KEY')
+# Get API key from Streamlit secrets
+API_KEY = st.secrets["weather_api_key"]
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 
 def get_current_weather(city):
@@ -192,25 +212,55 @@ def main():
             with col1:
                 st.subheader("Current Weather")
                 
-                # Current weather metrics
-                col1a, col1b, col1c = st.columns(3)
-                with col1a:
-                    st.metric("Temperature", f"{current_weather['current_temp']}°C")
-                with col1b:
-                    st.metric("Feels Like", f"{current_weather['feels_like']}°C")
-                with col1c:
-                    st.metric("Humidity", f"{current_weather['humidity']}%")
+                # Adding spacing
+                st.markdown("<br>", unsafe_allow_html=True)
                 
-                # Additional metrics
-                col1d, col1e, col1f = st.columns(3)
-                with col1d:
-                    st.metric("Wind Speed", f"{current_weather['wind_kph']} km/h")
-                with col1e:
-                    st.metric("Pressure", f"{current_weather['pressure']} hPa")
-                with col1f:
-                    st.metric("Visibility", f"{current_weather['visibility_m']/1000:.1f} km")
+                # Current weather metrics in two rows
+                row1_cols = st.columns(3)
+                with row1_cols[0]:
+                    st.metric(
+                        "Temperature",
+                        f"{current_weather['current_temp']}°C",
+                        delta=None
+                    )
+                with row1_cols[1]:
+                    st.metric(
+                        "Feels Like",
+                        f"{current_weather['feels_like']}°C",
+                        delta=None
+                    )
+                with row1_cols[2]:
+                    st.metric(
+                        "Humidity",
+                        f"{current_weather['humidity']}%",
+                        delta=None
+                    )
+                
+                # Adding spacing between rows
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                row2_cols = st.columns(3)
+                with row2_cols[0]:
+                    st.metric(
+                        "Wind Speed",
+                        f"{current_weather['wind_kph']} km/h",
+                        delta=None
+                    )
+                with row2_cols[1]:
+                    st.metric(
+                        "Pressure",
+                        f"{current_weather['pressure']} hPa",
+                        delta=None
+                    )
+                with row2_cols[2]:
+                    st.metric(
+                        "Visibility",
+                        f"{current_weather['visibility_m']/1000:.1f} km",
+                        delta=None
+                    )
                 
                 # Description
+                st.markdown("<br>", unsafe_allow_html=True)
                 st.info(f"Weather Description: {current_weather['description']}")
                 
             with col2:
