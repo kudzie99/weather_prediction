@@ -53,9 +53,11 @@ def load_github_models(url):
         response = urllib.request.urlopen(url)
         models = pickle.load(response)
         return models['regressor'], models['classifier'], models['scaler']
+    except ModuleNotFoundError as e:
+        st.error(f"Missing module: {e}")
     except Exception as e:
-        st.error(f"Error loading models from GitHub: {e}")
-        return None, None, None
+        st.error(f"Detailed error loading models: {e}")
+    return None, None, None
 
 # Get the model URL from Streamlit secrets
 GITHUB_MODEL_URL = "https://github.com/kudzie99/weather_prediction/raw/refs/heads/main/weather_models.pkl"
