@@ -45,7 +45,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Load models from GitHub
+# Loading models from GitHub
 @st.cache_resource
 def load_github_models(url):
     """Load saved weather prediction models and scaler from GitHub."""
@@ -59,7 +59,7 @@ def load_github_models(url):
         st.error(f"Detailed error loading models: {e}")
     return None, None, None
 
-# Get the model URL from Streamlit secrets
+# Getting the model URL from Streamlit secrets
 GITHUB_MODEL_URL = "https://github.com/kudzie99/weather_prediction/raw/refs/heads/main/weather_models.pkl"
 regressor, classifier, scaler = load_github_models(GITHUB_MODEL_URL)
 
@@ -67,7 +67,7 @@ if not all([regressor, classifier, scaler]):
     st.error("Failed to load models. Please check your configuration.")
     st.stop()
 
-# Get API key from Streamlit secrets
+# Getting API key from Streamlit secrets
 API_KEY = st.secrets["weather_api_key"]
 BASE_URL = 'https://api.openweathermap.org/data/2.5/'
 
@@ -207,7 +207,7 @@ def main():
         current_weather = get_current_weather(city)
         
         if current_weather:
-            # Create two columns for current weather and map
+            # Creating two columns for current weather and map
             col1, col2 = st.columns([2, 1])
             
             with col1:
@@ -245,7 +245,7 @@ def main():
             st.subheader("Hourly Forecast")
             predictions = predict_weather(current_weather)
             
-            # Modify rain probability to add % sign
+            # Modifying rain probability to add % sign
             for pred in predictions:
                 pred['rain_probability'] = f"{pred['rain_probability']}%"
             
