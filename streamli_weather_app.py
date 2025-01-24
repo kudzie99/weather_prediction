@@ -199,7 +199,7 @@ def create_forecast_plot(predictions):
     return fig
 
 def main():
-    st.title("Weather Forecast Application")
+    st.title("Weather Forecast Using Machine Learning")
     
     city = st.text_input("Enter city name", "")
     
