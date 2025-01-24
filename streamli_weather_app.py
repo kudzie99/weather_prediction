@@ -208,7 +208,7 @@ def main():
         
         if current_weather:
             # Create two columns for current weather and map
-            col1, col2 = st.columns([1, 1])
+            col1, col2 = st.columns([1, 2])
             
             with col1:
                 st.subheader("Current Weather")
