@@ -199,72 +199,39 @@ def create_forecast_plot(predictions):
     return fig
 
 def main():
-    st.title("Weather Forecast Using Machine Learning")
+    st.title("Weather Forecast Application")
     
-    # Search bar
     city = st.text_input("Enter city name", "")
     
     if city:
         current_weather = get_current_weather(city)
         
         if current_weather:
-            # Create two columns for layout
+            # Create two columns for current weather and map
             col1, col2 = st.columns([1, 1])
             
             with col1:
                 st.subheader("Current Weather")
                 
-                # Adding spacing
-                st.markdown("<br>", unsafe_allow_html=True)
-                
                 # Current weather metrics in two rows
                 row1_cols = st.columns(3)
                 with row1_cols[0]:
-                    st.metric(
-                        "Temperature",
-                        f"{current_weather['current_temp']}°C",
-                        delta=None
-                    )
+                    st.metric("Temperature", f"{current_weather['current_temp']}°C")
                 with row1_cols[1]:
-                    st.metric(
-                        "Feels Like",
-                        f"{current_weather['feels_like']}°C",
-                        delta=None
-                    )
+                    st.metric("Feels Like", f"{current_weather['feels_like']}°C")
                 with row1_cols[2]:
-                    st.metric(
-                        "Humidity",
-                        f"{current_weather['humidity']}%",
-                        delta=None
-                    )
-                
-                # Adding spacing between rows
-                st.markdown("<br>", unsafe_allow_html=True)
+                    st.metric("Humidity", f"{current_weather['humidity']}%")
                 
                 row2_cols = st.columns(3)
                 with row2_cols[0]:
-                    st.metric(
-                        "Wind Speed",
-                        f"{current_weather['wind_kph']} km/h",
-                        delta=None
-                    )
+                    st.metric("Wind Speed", f"{current_weather['wind_kph']} km/h")
                 with row2_cols[1]:
-                    st.metric(
-                        "Pressure",
-                        f"{current_weather['pressure']} hPa",
-                        delta=None
-                    )
+                    st.metric("Pressure", f"{current_weather['pressure']} hPa")
                 with row2_cols[2]:
-                    st.metric(
-                        "Visibility",
-                        f"{current_weather['visibility_m']/1000:.1f} km",
-                        delta=None
-                    )
+                    st.metric("Visibility", f"{current_weather['visibility_m']/1000:.1f} km")
                 
-                # Description
-                st.markdown("<br>", unsafe_allow_html=True)
                 st.info(f"Weather Description: {current_weather['description']}")
-
+                
             with col2:
                 # Map
                 m = folium.Map(location=[current_weather['latitude'], current_weather['longitude']], zoom_start=10)
@@ -274,16 +241,20 @@ def main():
                 ).add_to(m)
                 st_folium(m, height=300)
             
-            # Forecast section - now spanning full width
-            st.subheader("Weather Forecast")
+            # Forecast table below current weather and map
+            st.subheader("Hourly Forecast")
             predictions = predict_weather(current_weather)
             
-            # Create and display forecast plot
+            # Modify rain probability to add % sign
+            for pred in predictions:
+                pred['rain_probability'] = f"{pred['rain_probability']}%"
+            
+            st.dataframe(pd.DataFrame(predictions), use_container_width=True)
+            
+            # Forecast plot at the bottom
+            st.subheader("Forecast Visualization")
             fig = create_forecast_plot(predictions)
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Display forecast data in a table spanning full width
-            st.dataframe(pd.DataFrame(predictions), use_container_width=True)
             
         else:
             st.error("City not found. Please check the spelling and try again.")
