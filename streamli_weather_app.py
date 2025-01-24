@@ -58,7 +58,7 @@ def load_github_models(url):
         return None, None, None
 
 # Get the model URL from Streamlit secrets
-GITHUB_MODEL_URL = st.secrets["github_model_url"]
+GITHUB_MODEL_URL = st.secrets["https://github.com/kudzie99/weather_prediction/blob/main/weather_models.pkl"]
 regressor, classifier, scaler = load_github_models(GITHUB_MODEL_URL)
 
 if not all([regressor, classifier, scaler]):
